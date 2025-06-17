@@ -1,5 +1,5 @@
 euro05:
-  description: Euro 4km area - Europe
+  description: Euro 0.5km area - Europe
   projection:
     proj: stere 
     ellps: bessel
