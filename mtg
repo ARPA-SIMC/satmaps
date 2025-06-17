@@ -1,0 +1,91 @@
+#!/usr/bin/python3
+
+import argparse
+import abc
+from pathlib import Path
+from typing import Any, ClassVar, cast
+
+from rich.console import Console
+from rich.table import Table
+
+from satpy import Scene
+
+console = Console()
+
+
+def _get_first_docstring_line(obj: Any) -> str | None:
+    if obj.__doc__ is None:
+        raise RuntimeError(f"{obj!r} lacks a docstring")
+    try:
+        return cast(str, obj.__doc__).split("\n")[1].strip()
+    except (AttributeError, IndexError):
+        return None
+
+
+class Command(abc.ABC):
+    name: ClassVar[str]
+    commands: dict[str, type["Command"]] = {}
+
+    def __init_subclass__(cls, name: str | None = None, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        cls.name = name or cls.__name__.lower()
+        cls.commands[cls.name] = cls
+
+    def __init__(self, raw: Path) -> None:
+        self.raw = raw
+        self.scene = Scene(reader="fci_l1c_nc", filenames=self.raw.glob("*BODY*.nc"))
+
+    @abc.abstractmethod
+    def run(self) -> None:
+        """Run the command."""
+
+
+class Inventory(Command):
+    """Show available datasets."""
+
+    def run(self) -> None:
+        table = Table(title="Contents")
+        table.add_column("Name")
+        table.add_column("Wavelength")
+        table.add_column("Resolution", justify="right")
+        table.add_column("Calibration", justify="right")
+        for data_id in self.scene.available_dataset_ids():
+            table.add_row(
+                data_id["name"],
+                str(wl) if (wl := data_id.get("wavelength")) else "",
+                str(data_id["resolution"]),
+                cal.name if (cal := data_id.get("calibration")) else "",
+            )
+        console.print(table)
+
+
+class Vis06(Command, name="vis_06"):
+    """Visible 0.6 image."""
+
+    def run(self):
+        from pyresample.area_config import load_area
+
+        area = load_area("area.yaml", "euro05")
+        self.scene.load(["vis_06"])
+        # euro = self.scene.resample("euro4")
+        euro = self.scene.resample(area)
+        euro.save_dataset("vis_06", "./vis_06.png")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="MTG experiments")
+    subparsers = parser.add_subparsers(help="sub-command help", dest="command")
+    for command_cls in Command.commands.values():
+        subparsers.add_parser(
+            command_cls.name, help=_get_first_docstring_line(command_cls)
+        )
+    args = parser.parse_args()
+
+    command_cls = Command.commands[args.command]
+
+    command = command_cls(Path("raw"))
+    command.run()
+
+
+if __name__ == "__main__":
+    main()
