@@ -1,0 +1,8 @@
+enhancements:
+  ir_105_hr:
+    standard_name: ir_105_hr
+    operations:
+     - name: stretch
+       method: !!python/name:satpy.enhancements.stretch
+     - name: inverse
+       method: !!python/name:satpy.enhancements.invert

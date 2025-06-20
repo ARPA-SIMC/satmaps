@@ -1,0 +1,9 @@
+sensor_name: visir/fci
+
+composites:
+  ir_105_hr:
+    compositor: !!python/name:satpy.composites.SingleBandCompositor
+    prerequisites:
+     - name: ir_105
+    standard_name: ir_105_hr
+
