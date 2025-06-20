@@ -2,24 +2,28 @@
 
 import argparse
 import abc
+import inspect
+import sys
 from pathlib import Path
 from typing import Any, ClassVar, cast
 
 from rich.console import Console
 from rich.table import Table
 
+import satpy
 from satpy import Scene
 
+# satpy.utils.trace_on()
+
 console = Console()
+
+srcdir = Path(sys.argv[0]).absolute().parent
 
 
 def _get_first_docstring_line(obj: Any) -> str | None:
     if obj.__doc__ is None:
         raise RuntimeError(f"{obj!r} lacks a docstring")
-    try:
-        return cast(str, obj.__doc__).split("\n")[1].strip()
-    except (AttributeError, IndexError):
-        return None
+    return cast(str, obj.__doc__).split("\n")[0].strip().rstrip(".")
 
 
 class Command(abc.ABC):
@@ -28,19 +32,63 @@ class Command(abc.ABC):
 
     def __init_subclass__(cls, name: str | None = None, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
+        if inspect.isabstract(cls):
+            return
         cls.name = name or cls.__name__.lower()
         cls.commands[cls.name] = cls
 
-    def __init__(self, raw: Path) -> None:
-        self.raw = raw
-        self.scene = Scene(reader="fci_l1c_nc", filenames=self.raw.glob("*BODY*.nc"))
+    def __init__(self, args: argparse.Namespace) -> None:
+        self.args = args
+
+    @classmethod
+    def add_subparsers(cls, subparsers: "argparse._SubParsersAction[Any]") -> None:
+        for command_cls in cls.commands.values():
+            subparser = subparsers.add_parser(
+                command_cls.name, help=_get_first_docstring_line(command_cls)
+            )
+            command_cls.add_args(subparser)
+
+    @classmethod
+    def add_args(cls, parser: argparse.ArgumentParser) -> None:
+        pass
 
     @abc.abstractmethod
     def run(self) -> None:
         """Run the command."""
 
 
-class Inventory(Command):
+class SceneCommand(Command, abc.ABC):
+    @classmethod
+    def add_args(cls, parser: argparse.ArgumentParser) -> None:
+        parser.add_argument(
+            "sources",
+            type=Path,
+            default=srcdir / "raw",
+            nargs="?",
+            help="path to the source MTG NetCDF files",
+        )
+
+    def __init__(self, args: argparse.Namespace) -> None:
+        super().__init__(args)
+        self.scene = Scene(
+            reader="fci_l1c_nc", filenames=args.sources.glob("**/*BODY*.nc")
+        )
+
+
+class ProductCommand(SceneCommand, abc.ABC):
+    @classmethod
+    def add_args(cls, parser: argparse.ArgumentParser) -> None:
+        super().add_args(parser)
+        parser.add_argument(
+            "--area",
+            "-a",
+            action="store",
+            default="mtg_fci_fdss_4km",
+            help="area of the products to generate",
+        )
+
+
+class Inventory(SceneCommand):
     """Show available datasets."""
 
     def run(self) -> None:
@@ -59,31 +107,69 @@ class Inventory(Command):
         console.print(table)
 
 
-class Vis06(Command, name="vis_06"):
-    """Visible 0.6 image."""
+class Composites(SceneCommand):
+    """Show available composites."""
 
-    def run(self):
-        from pyresample.area_config import load_area
+    def run(self) -> None:
+        table = Table(title="Composites")
+        table.add_column("Name")
+        table.add_column("Available")
+        available = set(
+            data_id["name"] for data_id in self.scene.available_composite_ids()
+        )
+        for data_id in self.scene.all_composite_ids():
+            table.add_row(
+                data_id["name"],
+                "yes" if data_id["name"] in available else "",
+            )
+        console.print(table)
 
-        area = load_area("area.yaml", "euro05")
+
+class Generate(ProductCommand, name="gen"):
+    """Generate one or more named composites."""
+
+    @classmethod
+    def add_args(cls, parser: argparse.ArgumentParser) -> None:
+        super().add_args(parser)
+        parser.add_argument(
+            "products",
+            nargs="+",
+            help=(
+                "names of products to generate." " See `composites` output for a list."
+            ),
+        )
+        parser.add_argument(
+            "--output", "-o", type=Path, default=Path("."), help="output directory"
+        )
+
+    def run(self) -> None:
+        products = self.args.products
+        self.scene.load(products)
+        area = self.scene.resample(self.args.area)
+        self.args.output.mkdir(parents=True, exist_ok=True)
+        area.save_datasets(base_dir=self.args.output)
+
+
+class Vis06(ProductCommand, name="vis_06_hr"):
+    """High resolution visible 0.6µm image."""
+
+    def run(self) -> None:
         self.scene.load(["vis_06"])
         # euro = self.scene.resample("euro4")
-        euro = self.scene.resample(area)
-        euro.save_dataset("vis_06", "./vis_06.png")
+        euro = self.scene.resample(self.args.area)
+        euro.save_dataset("vis_06", "./vis_06_hr.png")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="MTG experiments")
-    subparsers = parser.add_subparsers(help="sub-command help", dest="command")
-    for command_cls in Command.commands.values():
-        subparsers.add_parser(
-            command_cls.name, help=_get_first_docstring_line(command_cls)
-        )
+    subparsers = parser.add_subparsers(help="sub-commands", dest="command")
+    Command.add_subparsers(subparsers)
     args = parser.parse_args()
 
-    command_cls = Command.commands[args.command]
+    satpy.config.set(config_path=[srcdir / "config"])
 
-    command = command_cls(Path("raw"))
+    command_cls = Command.commands[args.command]
+    command = command_cls(args)
     command.run()
 
 
