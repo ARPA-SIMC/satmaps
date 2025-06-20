@@ -15,5 +15,8 @@ New composites can be configured in `config/composites/fci.yaml` and
 
 ## Notes
 
-Both EO:EUM:DAT:0662 and EO:EUM:DAT:0665 product may be needed to enable all
+Both EO:EUM:DAT:0662 and EO:EUM:DAT:0665 products may be needed to enable all
 possible composites.
+
+You can unpack zipfiles into multiple subdirectories: NetCDF files will be
+looked up recursively.
