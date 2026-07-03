@@ -1,3 +1,7 @@
+# Satmaps
+
+Satellite product generation using [satpy](https://github.com/pytroll/satpy).
+
 # MTG experiments with satpy
 
 1. download products with `eumdac` and unpack the zipfiles into a directory
@@ -20,3 +24,11 @@ possible composites.
 
 You can unpack zipfiles into multiple subdirectories: NetCDF files will be
 looked up recursively.
+
+## System compatibility
+
+The minimal target distribution is Rocky Linux 10.
+
+Relevant dependencies are:
+
+* Python 3.12

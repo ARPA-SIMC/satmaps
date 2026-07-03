@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "satmaps"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">= 3.12"
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE"]
+
+[project.urls]
+"Source code" = "https://github.com/ARPA-SIMC/satmaps"
+
+[project.scripts]
+satmaps = "satmaps.__main__:entry_point"
+
+[tool.pytest.ini_options]
+addopts = ["--ignore=doc"]
+python_files = ["test_*.py"]
+
+[tool.black]
+line-length = 80
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = "invalid-name,too-many-instance-attributes,too-many-locals,missing-function-docstring,too-many-arguments"
+
+[tool.pylint.MAIN]
+max-line-length = 80
+
+[tool.mypy]
+mypy_path = "stubs"
+packages = ["satmaps"]
+strict = true
+enable_error_code = "explicit-override"
+plugins = [
+    "numpy.typing.mypy_plugin",
+    "pydantic.mypy",
+]
+
