@@ -1,0 +1,7 @@
+area: italy
+skip: 
+# These currently raise the exception
+# ValueError: operands could not be broadcast together with shapes (11136, 11136) (5568, 5568)
+ - fire_temperature_38refl
+ - day_microphysics
+ - snow

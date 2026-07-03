@@ -2,28 +2,56 @@
 
 Satellite product generation using [satpy](https://github.com/pytroll/satpy).
 
-# MTG experiments with satpy
+## Usage
 
-1. download products with `eumdac` and unpack the zipfiles into a directory
-2. `./mtg inventory {directory}` shows what datasets are available
-3. `./mtg composites {directory}` shows what composites can be generated
-4. `./mtg gen {directory} {compositename1} {compositename2}...` generates the named composites
+In the following usage examples, it is assumed that input data has been
+downloaded in the `inputs/` directory.
 
-Area can be selected with `mtg gen --area`.
+### List available composites
 
-Areas can be configured in `config/areas.yaml`.
+You can use `satmaps composites -i inputs` to list all composites that can be
+generated from the input data.
 
-New composites can be configured in `config/composites/fci.yaml` and
-`config/enhancements/fci.yaml`.
+### List available areas
 
+You can use `satmaps areas` to list all available areas.
 
-## Notes
+### Rendering products
 
-Both EO:EUM:DAT:0662 and EO:EUM:DAT:0665 products may be needed to enable all
-possible composites.
+You can use `satmaps render -i inputs -o outputdir` to render all available
+composites to products in the given output directory.
 
-You can unpack zipfiles into multiple subdirectories: NetCDF files will be
-looked up recursively.
+You can use `--flavour` to specify a flavour file to control the processing.
+
+You can also append composite names to render only the given composites.
+
+Composites already present in the output directory will not be generated again,
+so it's possible to build the output product set incrementally.
+
+### Running directly from the git checkout
+
+Note that, when running from the git checkout, you need to use `python3 -m
+satmaps` instead of `satmaps`.
+
+## Configuration
+
+Processing can be configured via the `recipes/` directory. It contains:
+
+* `satpy/`: satpy configuration, such as area definitions and definitions of custom composites
+* `flavours/`: named YAML files containing configuration of the generation run,
+  such as area selection, or a selection of what composites should be generated
+
+Satpy data is stored across runs in the `data/` directory.
+
+New composites can be configured in `config/composites/` and
+`config/enhancements/`: see `README.md` files in those directories.
+
+## Performance
+
+You can use the `DASK_NUM_WORKERS` environment variable to define the number of
+worker threads for processing.
+
+For more information, see: <https://satpy.readthedocs.io/en/stable/faq.html#why-is-satpy-slow-on-my-powerful-machine>
 
 ## System compatibility
 

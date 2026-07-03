@@ -1,3 +1,6 @@
+# Custom area definitions.
+#
+# See https://satpy.readthedocs.io/en/stable/resample.html#create-custom-area-definition
 italy:
   description: italy
   projection:

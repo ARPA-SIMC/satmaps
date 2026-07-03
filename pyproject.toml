@@ -38,4 +38,10 @@ plugins = [
     "numpy.typing.mypy_plugin",
     "pydantic.mypy",
 ]
+untyped_calls_exclude = ["satpy"]
 
+[[tool.mypy.overrides]]
+module = [
+    "satpy",
+]
+ignore_missing_imports = true
