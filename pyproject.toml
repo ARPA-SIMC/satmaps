@@ -16,6 +16,9 @@ license-files = ["LICENSE"]
 [project.scripts]
 satmaps = "satmaps.__main__:entry_point"
 
+[tool.hatch.version]
+path = "satmaps/__init__.py"
+
 [tool.pytest.ini_options]
 addopts = ["--ignore=doc"]
 python_files = ["test_*.py"]
