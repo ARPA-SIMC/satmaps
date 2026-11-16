@@ -21,8 +21,8 @@ path = "satmaps/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "recipes",
-  "data",
+  "/recipes",
+  "/data",
 ]
 
 [tool.pytest.ini_options]
