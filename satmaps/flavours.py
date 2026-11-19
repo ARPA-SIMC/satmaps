@@ -1,8 +1,16 @@
 from pathlib import Path
-from typing import Self
+from typing import Self, TypedDict, NotRequired
 
 import pydantic
 import yaml
+
+
+class Overlay(TypedDict):
+    """Typing for the overlay dict."""
+
+    coast_dir: str
+    color: NotRequired[tuple[int, int, int]]
+    width: NotRequired[float]
 
 
 class Flavour(pydantic.BaseModel):
@@ -10,6 +18,7 @@ class Flavour(pydantic.BaseModel):
 
     area: str
     skip: list[str] = []
+    overlay: Overlay | None = None
 
     @classmethod
     def load(cls, path: Path) -> Self:

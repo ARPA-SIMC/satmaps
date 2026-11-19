@@ -5,7 +5,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import NamedTuple, override
+from typing import NamedTuple, override, Any
 
 # import netCDF4 as nc
 # import numpy
@@ -37,7 +37,7 @@ class SatmapsCommand(Command, abc.ABC):
             "-r",
             type=Path,
             default=srcdir / "recipes",
-            help="path to the recipe definitions",
+            help="path to the recipe definitions. Default: %(default)s",
         )
         parser.add_argument(
             "--input",
@@ -304,6 +304,13 @@ class Render(FlavourCommand):
             help="generate composites one at a time. It is slower, but may help understand which ones crash",
         )
 
+    def get_save_dataset_kwargs(self) -> dict[str, Any]:
+        """Return extra keyword arguments for save_dataset."""
+        res: dict[str, Any] = {}
+        if self.flavour.overlay is not None:
+            res["overlay"] = self.flavour.overlay
+        return res
+
     def process_serial(self, todo: dict[str, Path]) -> None:
         for data_id, dest in todo.items():
             logging.info("Generate %s", data_id)
@@ -315,7 +322,11 @@ class Render(FlavourCommand):
             area = self.scene.resample(self.flavour.area)
             self.args.output.mkdir(parents=True, exist_ok=True)
             logging.info("%s: writing composite %s", dest, data_id)
-            area.save_dataset(data_id, filename=dest.as_posix())
+            area.save_dataset(
+                data_id,
+                filename=dest.as_posix(),
+                **self.get_save_dataset_kwargs(),
+            )
 
     def process_parallel(self, todo: dict[str, Path]) -> None:
         logging.info("Load...")
@@ -327,7 +338,11 @@ class Render(FlavourCommand):
         self.args.output.mkdir(parents=True, exist_ok=True)
         for data_id, dest in todo.items():
             logging.info("%s: writing composite %s", dest, data_id)
-            area.save_dataset(data_id, filename=dest.as_posix())
+            area.save_dataset(
+                data_id,
+                filename=dest.as_posix(),
+                **self.get_save_dataset_kwargs(),
+            )
 
     @override
     def run(self) -> None:

@@ -46,6 +46,32 @@ Satpy data is stored across runs in the `data/` directory.
 New composites can be configured in `config/composites/` and
 `config/enhancements/`: see `README.md` files in those directories.
 
+### Coastlines
+
+You can configure coastlines in the flavour using the `overlay` section, for
+example:
+
+```
+# See the documentation for add_overlay at
+# https://satpy.readthedocs.io/en/stable/api/satpy.enhancements.overlays.html#satpy.enhancements.overlays.add_overlay
+overlay:
+  # Directory with GSHHS coastline shapefiles
+  coast_dir: coast/
+  # Color, as R, G, B, values from 0 to 255
+  color: [200, 200, 200]
+  # Line width for coastlines (floating point)
+  # width: 1.0
+```
+
+Where:
+
+* `coast_dir` points to a directory that contains unpacked GSHHS coastline
+  shapefiles. You can download them from various places, like
+  [SOEST](https://www.soest.hawaii.edu/wessel/gshhg/) or [unpacked in a git
+  repo](https://github.com/pelson/gshhs-unpacked/)
+* `color` is a list of three RGB values from 0 to 255
+* `width` (optional) is the width used for drawing the coastlines
+
 ## Performance
 
 You can use the `DASK_NUM_WORKERS` environment variable to define the number of
