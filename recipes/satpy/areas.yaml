@@ -65,8 +65,10 @@ europe:
     no_defs: null
     type: crs
   shape:
-    height: 480
-    width: 520
+    #height: 480
+    #width: 520
+    height: 960
+    width: 1040
   area_extent:
     lower_left_xy: [-1500000.0, 3600000.0]
     upper_right_xy: [2350000.0, 7000000.0]
